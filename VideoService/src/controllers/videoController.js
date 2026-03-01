@@ -4,17 +4,25 @@ import cloudinary from "../config/cloudinary.js";
 // Upload Video
 export const uploadVideo = async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ message: "No video file provided" });
+    if (!req.file)
+      return res.status(400).json({ message: "No video file provided" });
 
     const result = await cloudinary.uploader.upload(req.file.path, {
       resource_type: "video",
       folder: "videos",
+      eager: [{ width: 300, height: 200, crop: "fill", format: "jpg" }], // generate thumbnail
     });
+
+    // Cloudinary returns eager[0].secure_url as the thumbnail
+    const thumbnailUrl =
+      result.eager && result.eager[0] ? result.eager[0].secure_url : "";
 
     const video = await Video.create({
       title: req.body.title,
       description: req.body.description,
       url: result.secure_url,
+      thumbnailUrl, // save thumbnail
+      category: req.body.category || "public", // default to public
       uploadedBy: req.user.id, // taken from JWT
     });
 
@@ -22,6 +30,22 @@ export const uploadVideo = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Video upload failed" });
+  }
+};
+
+// GET single video & increment views
+export const getVideoById = async (req, res) => {
+  try {
+    const video = await Video.findById(req.params.id)
+    if (!video) return res.status(404).json({ message: "Video not found" });
+
+    video.views += 1;  // increment view count
+    await video.save();
+
+    res.json(video);
+  } catch (error) {
+    console.error("Get Video Error:", error);
+    res.status(500).json({ message: "Cannot fetch video" });
   }
 };
 
@@ -59,7 +83,6 @@ export const likeVideo = async (req, res) => {
   }
 };
 
-
 // Dislike Video
 export const dislikeVideo = async (req, res) => {
   try {
@@ -70,9 +93,11 @@ export const dislikeVideo = async (req, res) => {
     if (!video.dislikes.includes(req.user.id)) {
       video.dislikes.push(req.user.id);
       // Remove from likes if exists
-      video.likes = video.likes.filter(id => id.toString() !== req.user.id);
+      video.likes = video.likes.filter((id) => id.toString() !== req.user.id);
     } else {
-      video.dislikes = video.dislikes.filter(id => id.toString() !== req.user.id);
+      video.dislikes = video.dislikes.filter(
+        (id) => id.toString() !== req.user.id,
+      );
     }
 
     await video.save();
@@ -81,7 +106,6 @@ export const dislikeVideo = async (req, res) => {
     res.status(500).json({ message: "Error disliking video" });
   }
 };
-
 
 // Edit Video (title, description)
 export const editVideo = async (req, res) => {
@@ -92,7 +116,9 @@ export const editVideo = async (req, res) => {
 
     // Only uploader can edit
     if (video.uploadedBy.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Not authorized to edit this video" });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to edit this video" });
     }
 
     if (title) video.title = title;
@@ -105,7 +131,6 @@ export const editVideo = async (req, res) => {
   }
 };
 
-
 // Delete Video
 export const deleteVideo = async (req, res) => {
   try {
@@ -114,13 +139,17 @@ export const deleteVideo = async (req, res) => {
 
     // Only uploader can delete
     if (video.uploadedBy.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Not authorized to delete this video" });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this video" });
     }
 
     // Optional: Delete from Cloudinary
     // Extract public_id from URL if stored
     const publicId = video.url.split("/").pop().split(".")[0];
-    await cloudinary.uploader.destroy(`videos/${publicId}`, { resource_type: "video" });
+    await cloudinary.uploader.destroy(`videos/${publicId}`, {
+      resource_type: "video",
+    });
 
     // Delete from DB
     await video.deleteOne(); // <-- updated method

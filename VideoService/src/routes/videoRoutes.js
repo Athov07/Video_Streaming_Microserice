@@ -2,6 +2,7 @@ import express from "express";
 import multer from "multer";
 import {
   uploadVideo,
+  getVideoById,
   getAllVideos,
   likeVideo,
   dislikeVideo,
@@ -19,5 +20,6 @@ router.put("/like/:id", protect, likeVideo);
 router.put("/dislike/:id", protect, dislikeVideo);
 router.put("/edit/:id", protect, editVideo);
 router.delete("/delete/:id", protect, deleteVideo);
+router.get("/:id", getVideoById);
 
 export default router;

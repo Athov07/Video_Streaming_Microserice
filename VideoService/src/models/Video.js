@@ -9,6 +9,17 @@ const videoSchema = new mongoose.Schema(
     description: {
       type: String,
     },
+    thumbnailUrl: {
+      type: String,
+    },
+    category: {
+      type: String,
+      default: "public",
+    },
+    views: {
+      type: Number,
+      default: 0,
+    },
     url: {
       type: String,
       required: true,
