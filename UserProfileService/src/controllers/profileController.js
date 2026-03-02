@@ -11,7 +11,6 @@ export const getOrCreateProfile = async (req, res, next) => {
       profile = await UserProfile.create({
         userId: req.user.id,
         name: req.user.name || "New User",
-        email: req.user.email,
       });
     }
 
@@ -74,51 +73,40 @@ export const updateProfile = async (req, res) => {
 };
 
 // Follow user
-export const followUser = async (req, res) => {
+// Unfollow user
+export const toggleFollowUser = async (req, res) => {
   try {
-    const userToFollow = await UserProfile.findById(req.params.userId);
-    const me = await UserProfile.findOne({ userId: req.user.id });
+    const targetProfile = await UserProfile.findById(req.params.userId);
+    const myProfile = await UserProfile.findOne({ userId: req.user.id });
 
-    if (!userToFollow || !me)
+    if (!targetProfile || !myProfile)
       return res.status(404).json({ message: "User not found" });
-    if (userToFollow._id.equals(me._id))
+
+    if (targetProfile._id.equals(myProfile._id))
       return res.status(400).json({ message: "Cannot follow yourself" });
 
-    if (!userToFollow.followers.includes(me._id)) {
-      userToFollow.followers.push(me._id);
-      me.following.push(userToFollow._id);
+    const isFollowing = myProfile.following.includes(targetProfile._id);
+
+    if (isFollowing) {
+      // Unfollow
+      myProfile.following.pull(targetProfile._id);
+      targetProfile.followers.pull(myProfile._id);
+    } else {
+      // Follow
+      myProfile.following.push(targetProfile._id);
+      targetProfile.followers.push(myProfile._id);
     }
 
-    await userToFollow.save();
-    await me.save();
+    await myProfile.save();
+    await targetProfile.save();
 
-    res.json({ message: `You are now following ${userToFollow.name}` });
+    res.json({
+      isFollowing: !isFollowing,
+      followersCount: targetProfile.followers.length,
+    });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Cannot follow user" });
-  }
-};
-
-// Unfollow user
-export const unfollowUser = async (req, res) => {
-  try {
-    const userToUnfollow = await UserProfile.findById(req.params.userId);
-    const me = await UserProfile.findOne({ userId: req.user.id });
-
-    if (!userToUnfollow || !me)
-      return res.status(404).json({ message: "User not found" });
-
-    userToUnfollow.followers = userToUnfollow.followers.filter(
-      (id) => !id.equals(me._id),
-    );
-    me.following = me.following.filter((id) => !id.equals(userToUnfollow._id));
-
-    await userToUnfollow.save();
-    await me.save();
-
-    res.json({ message: `You have unfollowed ${userToUnfollow.name}` });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Cannot unfollow user" });
   }
 };

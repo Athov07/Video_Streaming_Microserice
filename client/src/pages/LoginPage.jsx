@@ -44,7 +44,7 @@ export default function LoginPage() {
       login(user, accessToken);
       localStorage.setItem("refreshToken", refreshToken);
 
-      navigate("/profile"); // redirect after login
+      navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Login failed");
     } finally {

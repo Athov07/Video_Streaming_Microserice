@@ -1,98 +1,127 @@
-import React, { useEffect, useState, useContext } from "react";
-import authService from "../services/api";
+import { useEffect, useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
-import Card from "../components/Card";
+import profileService from "../services/profile.api";
+import videoService from "../services/video.api";
+
+import ProfileCard from "../components/profile/ProfileCard";
+import FollowButton from "../components/profile/FollowButton";
+import EditProfileModal from "../components/profile/EditProfileModal";
+import VideoGrid from "../components/video/VideoGrid";
+import Loader from "../components/common/Loader";
+import EmptyState from "../components/common/EmptyState";
 
 export default function ProfilePage() {
   const { user } = useContext(AuthContext);
-  const [profile, setProfile] = useState(user || null);
-  const [loading, setLoading] = useState(false);
 
-useEffect(() => {
-  const fetchProfile = async () => {
-    try {
-      const res = await authService.getProfile();
-      setProfile(res.data.user || res.data);
-    } catch (err) {
-      console.error(
-        err.response?.data?.message || "Failed to fetch profile"
-      );
-    }
-  };
+  const [profile, setProfile] = useState(null);
+  const [videos, setVideos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
 
-  fetchProfile();
-}, []);
+  const isOwnProfile =
+  String(user?._id) === String(profile?.userId?._id || profile?.userId);
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        const profileRes = await profileService.getMyProfile();
+        setProfile(profileRes.data);
 
-    const formData = new FormData();
-    formData.append("image", file);
+        const videoRes = await videoService.getMyVideos();
+        setVideos(videoRes.data);
+      } catch (error) {
+        console.error("Failed to load profile", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    try {
-      setLoading(true);
-      const res = await authService.uploadProfileImage(formData);
-      setProfile(res.data.user);
-    } catch (err) {
-      console.error("Image upload failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchProfileData();
+  }, []);
 
-  if (!profile)
-    return <p className="text-center mt-10 text-gray-500">Loading...</p>;
+  if (loading) return <Loader />;
+
+  if (!profile) return <EmptyState message="Profile not found" />;
 
   return (
-    <div className="flex justify-center items-center p-4 pt-20">
-      <Card className="w-full max-w-md p-6 shadow-2xl rounded-2xl bg-white">
-        {/* Profile Image */}
-        <div className="flex flex-col items-center mb-6">
-          <div className="relative">
-            <img
-              src={
-                profile.profileImage
-                  ? profile.profileImage
-                  : "/default-avatar.png"
-              }
-              alt="Profile"
-              className="w-32 h-32 rounded-full object-cover border-4 border-indigo-500 shadow-md"
-            />
+    <div className="max-w-6xl mx-auto p-6 space-y-10">
+      
+      {/* ================= PROFILE SECTION ================= */}
+      <div className="card">
+        <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
 
-            <label className="absolute bottom-0 right-0 bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-full cursor-pointer shadow-lg">
-              📷
-              <input
-                type="file"
-                className="hidden"
-                onChange={handleImageUpload}
-              />
-            </label>
+          {/* Left Side - Profile Card */}
+          <ProfileCard
+            profile={profile}
+            isOwnProfile={isOwnProfile}
+            onProfileUpdate={setProfile}
+          />
+
+          {/* Right Side */}
+          <div className="flex-1">
+
+            <h2 className="title-lg">{profile.name}</h2>
+
+            {/* Email from AuthContext (AuthService owns email) */}
+            <p className="text-muted mb-4">{user?.email}</p>
+
+            {/* Stats */}
+            <div className="flex gap-8 text-sm text-gray-600 mb-6">
+              <div>
+                <strong>{profile.stats?.totalVideos || 0}</strong>
+                <p>Videos</p>
+              </div>
+
+              <div>
+                <strong>{profile.stats?.totalViews || 0}</strong>
+                <p>Views</p>
+              </div>
+
+              <div>
+                <strong>{profile.stats?.totalLikes || 0}</strong>
+                <p>Likes</p>
+              </div>
+            </div>
+
+            {/* Action Button */}
+            {isOwnProfile ? (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="btn-primary"
+              >
+                Edit Profile
+              </button>
+            ) : (
+              <FollowButton userId={profile._id} />
+            )}
           </div>
-
-          {loading && (
-            <p className="text-sm text-indigo-600 mt-2">Uploading...</p>
-          )}
         </div>
+      </div>
 
-        {/* User Info */}
-        <div className="space-y-3 text-gray-700">
-          <div className="flex justify-between border-b pb-2">
-            <span className="font-semibold">Name</span>
-            <span>{profile.name}</span>
-          </div>
+      {/* ================= VIDEOS SECTION ================= */}
+      <div>
+        <h3 className="title-md mb-6">
+          {isOwnProfile ? "My Videos" : "User Videos"}
+        </h3>
 
-          <div className="flex justify-between border-b pb-2">
-            <span className="font-semibold">Email</span>
-            <span>{profile.email}</span>
-          </div>
+        {videos.length > 0 ? (
+          <VideoGrid videos={videos} />
+        ) : (
+          <EmptyState message="No videos uploaded yet" />
+        )}
+      </div>
 
-          <div className="flex justify-between">
-            <span className="font-semibold">Role</span>
-            <span className="capitalize">{profile.role || "User"}</span>
-          </div>
-        </div>
-      </Card>
+      {/* ================= EDIT PROFILE MODAL ================= */}
+      {isEditing && (
+        <EditProfileModal
+          profile={profile}
+          onClose={() => setIsEditing(false)}
+          onProfileUpdate={(updatedProfile) => {
+            setProfile(updatedProfile);
+            setIsEditing(false);
+          }}
+        />
+      )}
     </div>
   );
 }

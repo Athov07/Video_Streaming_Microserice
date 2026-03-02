@@ -1,46 +1,62 @@
 import Video from "../models/Video.js";
 import cloudinary from "../config/cloudinary.js";
 
-// Upload Video
+/* =========================
+   Upload Video
+========================= */
 export const uploadVideo = async (req, res) => {
   try {
-    if (!req.file)
+    if (!req.file) {
       return res.status(400).json({ message: "No video file provided" });
+    }
 
     const result = await cloudinary.uploader.upload(req.file.path, {
       resource_type: "video",
       folder: "videos",
-      eager: [{ width: 300, height: 200, crop: "fill", format: "jpg" }], // generate thumbnail
+      eager: [{ width: 300, height: 200, crop: "fill", format: "jpg" }],
     });
 
-    // Cloudinary returns eager[0].secure_url as the thumbnail
     const thumbnailUrl =
       result.eager && result.eager[0] ? result.eager[0].secure_url : "";
+
+    if (!req.user?.id || !req.user?.name) {
+      return res.status(400).json({
+        message: "User information missing in token",
+      });
+    }
 
     const video = await Video.create({
       title: req.body.title,
       description: req.body.description,
       url: result.secure_url,
-      thumbnailUrl, // save thumbnail
-      category: req.body.category || "public", // default to public
-      uploadedBy: req.user.id, // taken from JWT
+      thumbnailUrl,
+      category: req.body.category || "public",
+      userId: req.user.id,
+      userName: req.user.name,
+      userProfileId: profile.data._id,
     });
 
     res.status(201).json(video);
   } catch (error) {
-    console.error(error);
+    console.error("Upload Error:", error);
     res.status(500).json({ message: "Video upload failed" });
   }
 };
 
-// GET single video & increment views
+/* =========================
+   Get Single Video
+========================= */
 export const getVideoById = async (req, res) => {
   try {
-    const video = await Video.findById(req.params.id)
-    if (!video) return res.status(404).json({ message: "Video not found" });
+    const video = await Video.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { views: 1 } },
+      { new: true }
+    );
 
-    video.views += 1;  // increment view count
-    await video.save();
+    if (!video) {
+      return res.status(404).json({ message: "Video not found" });
+    }
 
     res.json(video);
   } catch (error) {
@@ -49,114 +65,145 @@ export const getVideoById = async (req, res) => {
   }
 };
 
-// Get All Videos
+/* =========================
+   Get All Videos
+========================= */
 export const getAllVideos = async (req, res) => {
   try {
-    const videos = await Video.find();
-    // console.log("Videos fetched:", videos);
+    const videos = await Video.find().sort({ createdAt: -1 });
     res.json(videos);
   } catch (error) {
-    console.error("Error fetching videos:", error.message);
+    console.error("Fetch Error:", error);
     res.status(500).json({ message: "Cannot fetch videos" });
   }
 };
 
-// Like Video
+/* =========================
+   Get My Videos
+========================= */
+export const getMyVideos = async (req, res) => {
+  try {
+    const videos = await Video.find({ userId: req.user.id }).sort({
+      createdAt: -1,
+    });
+
+    res.json(videos);
+  } catch (error) {
+    console.error("My Videos Error:", error);
+    res.status(500).json({ message: "Cannot fetch my videos" });
+  }
+};
+
+/* =========================
+   Like Video (Atomic Update)
+========================= */
 export const likeVideo = async (req, res) => {
   try {
-    const video = await Video.findById(req.params.id);
-    if (!video) return res.status(404).json({ message: "Video not found" });
+    const updatedVideo = await Video.findByIdAndUpdate(
+      req.params.id,
+      {
+        $addToSet: { likes: req.user.id },
+        $pull: { dislikes: req.user.id },
+      },
+      { returnDocument: "after" }
+    );
 
-    if (!video.likes.includes(req.user.id)) {
-      video.likes.push(req.user.id);
-      video.dislikes = video.dislikes.filter(
-        (id) => id.toString() !== req.user.id,
-      );
-    } else {
-      video.likes = video.likes.filter((id) => id.toString() !== req.user.id);
+    if (!updatedVideo) {
+      return res.status(404).json({ message: "Video not found" });
     }
 
-    await video.save();
-    res.json(video);
+    res.json(updatedVideo);
   } catch (error) {
+    console.error("Like Error:", error);
     res.status(500).json({ message: "Error liking video" });
   }
 };
 
-// Dislike Video
+/* =========================
+   Dislike Video (Atomic Update)
+========================= */
 export const dislikeVideo = async (req, res) => {
   try {
-    const video = await Video.findById(req.params.id);
-    if (!video) return res.status(404).json({ message: "Video not found" });
+    const updatedVideo = await Video.findByIdAndUpdate(
+      req.params.id,
+      {
+        $addToSet: { dislikes: req.user.id },
+        $pull: { likes: req.user.id },
+      },
+      { new: true }
+    );
 
-    // Toggle dislike
-    if (!video.dislikes.includes(req.user.id)) {
-      video.dislikes.push(req.user.id);
-      // Remove from likes if exists
-      video.likes = video.likes.filter((id) => id.toString() !== req.user.id);
-    } else {
-      video.dislikes = video.dislikes.filter(
-        (id) => id.toString() !== req.user.id,
-      );
+    if (!updatedVideo) {
+      return res.status(404).json({ message: "Video not found" });
     }
 
-    await video.save();
-    res.json(video);
+    res.json(updatedVideo);
   } catch (error) {
+    console.error("Dislike Error:", error);
     res.status(500).json({ message: "Error disliking video" });
   }
 };
 
-// Edit Video (title, description)
+/* =========================
+   Edit Video
+========================= */
 export const editVideo = async (req, res) => {
   try {
     const { title, description } = req.body;
-    const video = await Video.findById(req.params.id);
-    if (!video) return res.status(404).json({ message: "Video not found" });
 
-    // Only uploader can edit
-    if (video.uploadedBy.toString() !== req.user.id) {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to edit this video" });
+    const video = await Video.findById(req.params.id);
+
+    if (!video) {
+      return res.status(404).json({ message: "Video not found" });
     }
 
-    if (title) video.title = title;
-    if (description) video.description = description;
+    if (video.userId !== req.user.id) {
+      return res.status(403).json({
+        message: "Not authorized to edit this video",
+      });
+    }
 
-    await video.save();
-    res.json(video);
+    const updatedVideo = await Video.findByIdAndUpdate(
+      req.params.id,
+      { title, description },
+      { new: true }
+    );
+
+    res.json(updatedVideo);
   } catch (error) {
+    console.error("Edit Error:", error);
     res.status(500).json({ message: "Error editing video" });
   }
 };
 
-// Delete Video
+/* =========================
+   Delete Video
+========================= */
 export const deleteVideo = async (req, res) => {
   try {
     const video = await Video.findById(req.params.id);
-    if (!video) return res.status(404).json({ message: "Video not found" });
 
-    // Only uploader can delete
-    if (video.uploadedBy.toString() !== req.user.id) {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to delete this video" });
+    if (!video) {
+      return res.status(404).json({ message: "Video not found" });
     }
 
-    // Optional: Delete from Cloudinary
-    // Extract public_id from URL if stored
+    if (video.userId !== req.user.id) {
+      return res.status(403).json({
+        message: "Not authorized to delete this video",
+      });
+    }
+
     const publicId = video.url.split("/").pop().split(".")[0];
+
     await cloudinary.uploader.destroy(`videos/${publicId}`, {
       resource_type: "video",
     });
 
-    // Delete from DB
-    await video.deleteOne(); // <-- updated method
+    await Video.findByIdAndDelete(req.params.id);
 
     res.json({ message: "Video deleted successfully" });
   } catch (error) {
-    console.error("Delete Video Error:", error);
+    console.error("Delete Error:", error);
     res.status(500).json({ message: "Error deleting video" });
   }
 };

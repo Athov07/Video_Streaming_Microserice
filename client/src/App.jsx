@@ -4,61 +4,111 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
+import { useContext } from "react";
 import { AuthContext } from "./context/AuthContext";
-import React, { useContext, setUser } from "react";
 
+import AppLayout from "./layouts/AppLayout";
 import AuthLayout from "./layouts/AuthLayout";
+import ProtectedRoute from "./routes/ProtectedRoute";
 
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
-import OTPVerificationPage from "./pages/OTPVerificationPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
-
-import ProfilePage from "./pages/ProfilePage";
 import DashboardPage from "./pages/DashboardPage";
-import OAuthSuccess from "./pages/OAuthSuccess";
-import ProtectedRoute from "./routes/ProtectedRoute";
+import PublicFeedPage from "./pages/PublicFeedPage";
+import WatchHistoryPage from "./pages/WatchHistoryPage";
+import ProfilePage from "./pages/ProfilePage";
+import VideoDetailPage from "./pages/VideoDetailPage";
+import OTPVerificationPage from "./pages/OTPVerificationPage"
+import ForgotPasswordPage from "./pages/ForgotPasswordPage"
+import ResetPasswordPage from "./pages/ResetPasswordPage"
 
 function App() {
   const { user } = useContext(AuthContext);
 
   return (
     <Router>
-      <AuthLayout>
-        <Routes>
-          {/* Default Route */}
-          <Route path="/" element={<Navigate to="/login" />} />
+      <Routes>
+        {/* Public routes without layout */}
+        <Route path="/" element={<PublicFeedPage />} />
+        <Route
+          path="/login"
+          element={
+            <AuthLayout>
+              <LoginPage />
+            </AuthLayout>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <AuthLayout>
+              <RegisterPage />
+            </AuthLayout>
+          }
+        />
+        <Route
+          path="/verify-otp"
+          element={
+            !user ? (
+              <AuthLayout>
+                <OTPVerificationPage />
+              </AuthLayout>
+            ) : (
+              <Navigate to="/profile" />
+            )
+          }
+        />
 
-          {/* ================= PUBLIC ROUTES ================= */}
-          <Route
-            path="/login"
-            element={!user ? <LoginPage /> : <Navigate to="/profile" />}
-          />
+        <Route
+          path="/forgot-password"
+          element={
+            !user ? (
+              <AuthLayout>
+                <ForgotPasswordPage />
+              </AuthLayout>
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+
+        <Route
+          path="/reset-password"
+          element={
+            !user ? (
+              <AuthLayout>
+                <ResetPasswordPage />
+              </AuthLayout>
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+
+        {/* Global Layout Wrapper */}
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<Navigate to="/dashboard" />} />
 
           <Route
-            path="/register"
-            element={!user ? <RegisterPage /> : <Navigate to="/profile" />}
-          />
-
-          <Route
-            path="/verify-otp"
+            path="/dashboard"
             element={
-              !user ? <OTPVerificationPage /> : <Navigate to="/profile" />
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
             }
           />
 
-          <Route
-            path="/forgot-password"
-            element={!user ? <ForgotPasswordPage /> : <Navigate to="/login" />}
-          />
+          <Route path="/feed" element={<PublicFeedPage />} />
 
           <Route
-            path="/reset-password"
-            element={!user ? <ResetPasswordPage /> : <Navigate to="/login" />}
+            path="/watch-history"
+            element={
+              <ProtectedRoute>
+                <WatchHistoryPage />
+              </ProtectedRoute>
+            }
           />
 
-          {/* ================= PROTECTED ROUTES ================= */}
           <Route
             path="/profile"
             element={
@@ -68,28 +118,9 @@ function App() {
             }
           />
 
-          <Route
-            path="/dashboard"
-            element={
-              user && user.role === "admin" ? (
-                <DashboardPage />
-              ) : (
-                <Navigate to="/profile" />
-              )
-            }
-          />
-
-          <Route path="/oauth-success" element={<OAuthSuccess />} />
-
-          {/* <Route
-            path="/oauth-success"
-            element={<OAuthSuccess setUser={setUser} />}
-          /> */}
-
-          {/* Fallback Route */}
-          <Route path="*" element={<Navigate to="/login" />} />
-        </Routes>
-      </AuthLayout>
+          <Route path="/watch/:id" element={<VideoDetailPage />} />
+        </Route>
+      </Routes>
     </Router>
   );
 }

@@ -5,8 +5,7 @@ import {
   getMyProfile,
   getOrCreateProfile,
   updateProfile,
-  followUser,
-  unfollowUser,
+  toggleFollowUser
 } from "../controllers/profileController.js";
 
 const router = express.Router();
@@ -16,9 +15,7 @@ router.get("/", protect, getOrCreateProfile, (req, res) => {
   res.json(req.profile);
 });
 
-router.get("/", protect, getMyProfile);
 router.put("/", protect, upload.single("profilePicture"), updateProfile);
-router.post("/follow/:userId", protect, followUser);
-router.post("/unfollow/:userId", protect, unfollowUser);
+router.post("/follow/:userId", protect, toggleFollowUser);
 
 export default router;
