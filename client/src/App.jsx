@@ -21,6 +21,7 @@ import VideoDetailPage from "./pages/VideoDetailPage";
 import OTPVerificationPage from "./pages/OTPVerificationPage"
 import ForgotPasswordPage from "./pages/ForgotPasswordPage"
 import ResetPasswordPage from "./pages/ResetPasswordPage"
+import MyVideosPage from "./pages/MyVideosPage";
 
 function App() {
   const { user } = useContext(AuthContext);
@@ -99,6 +100,7 @@ function App() {
           />
 
           <Route path="/feed" element={<PublicFeedPage />} />
+          <Route path="/my-videos" element={<MyVideosPage />} />
 
           <Route
             path="/watch-history"

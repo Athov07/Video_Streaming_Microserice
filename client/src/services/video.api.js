@@ -25,7 +25,7 @@ const videoService = {
   },
 
   deleteVideo: async (id) => {
-    return await VIDEO_API.delete(`/${id}`);
+    return await VIDEO_API.delete(`/delete/${id}`);
   },
 
   incrementViews: async (id) => {
@@ -39,6 +39,10 @@ const videoService = {
   getVideoById: async (id) => {
     return await VIDEO_API.get(`/${id}`);
   },
+
+ editVideo: async (id, data) => {
+  return await VIDEO_API.put(`/edit/${id}`, data);
+},
 
   toggleLike: async (id) => {
     return await VIDEO_API.put(`/like/${id}`);

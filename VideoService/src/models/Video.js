@@ -38,10 +38,17 @@ const videoSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    userProfileId: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-    },
+
+    likes: [
+      {
+        type: String,
+      },
+    ],
+    dislikes: [
+      {
+        type: String,
+      },
+    ],
   },
   { timestamps: true },
 );

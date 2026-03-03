@@ -1,6 +1,7 @@
 import Video from "../models/Video.js";
 import cloudinary from "../config/cloudinary.js";
 
+
 /* =========================
    Upload Video
 ========================= */
@@ -19,21 +20,14 @@ export const uploadVideo = async (req, res) => {
     const thumbnailUrl =
       result.eager && result.eager[0] ? result.eager[0].secure_url : "";
 
-    if (!req.user?.id || !req.user?.name) {
-      return res.status(400).json({
-        message: "User information missing in token",
-      });
-    }
-
     const video = await Video.create({
       title: req.body.title,
-      description: req.body.description,
+      description: req.body.description || "",
       url: result.secure_url,
       thumbnailUrl,
       category: req.body.category || "public",
       userId: req.user.id,
       userName: req.user.name,
-      userProfileId: profile.data._id,
     });
 
     res.status(201).json(video);
@@ -188,22 +182,14 @@ export const deleteVideo = async (req, res) => {
     }
 
     if (video.userId !== req.user.id) {
-      return res.status(403).json({
-        message: "Not authorized to delete this video",
-      });
+      return res.status(403).json({ message: "Unauthorized" });
     }
 
-    const publicId = video.url.split("/").pop().split(".")[0];
+    await video.deleteOne();
 
-    await cloudinary.uploader.destroy(`videos/${publicId}`, {
-      resource_type: "video",
-    });
-
-    await Video.findByIdAndDelete(req.params.id);
-
-    res.json({ message: "Video deleted successfully" });
+    res.status(200).json({ message: "Video deleted successfully" });
   } catch (error) {
-    console.error("Delete Error:", error);
-    res.status(500).json({ message: "Error deleting video" });
+    console.error("Delete error:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
