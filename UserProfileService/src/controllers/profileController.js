@@ -44,7 +44,7 @@ export const updateProfile = async (req, res) => {
 
     if (name) profile.name = name;
     if (bio) profile.bio = bio;
-    
+
     if (socialLinks) {
       if (typeof socialLinks === "string") {
         try {
@@ -74,10 +74,11 @@ export const updateProfile = async (req, res) => {
 
 // Follow user
 // Unfollow user
-export const toggleFollowUser = async (req, res) => {
+
+export const followUser = async (req, res) => {
   try {
-    const targetProfile = await UserProfile.findById(req.params.userId);
     const myProfile = await UserProfile.findOne({ userId: req.user.id });
+    const targetProfile = await UserProfile.findOne({ userId: req.params.userId });
 
     if (!targetProfile || !myProfile)
       return res.status(404).json({ message: "User not found" });
@@ -85,14 +86,18 @@ export const toggleFollowUser = async (req, res) => {
     if (targetProfile._id.equals(myProfile._id))
       return res.status(400).json({ message: "Cannot follow yourself" });
 
-    const isFollowing = myProfile.following.includes(targetProfile._id);
+    const isFollowing = myProfile.following.some(f =>
+      f.toString() === targetProfile._id.toString()
+    );
 
     if (isFollowing) {
-      // Unfollow
-      myProfile.following.pull(targetProfile._id);
-      targetProfile.followers.pull(myProfile._id);
+      myProfile.following = myProfile.following.filter(
+        f => f.toString() !== targetProfile._id.toString()
+      );
+      targetProfile.followers = targetProfile.followers.filter(
+        f => f.toString() !== myProfile._id.toString()
+      );
     } else {
-      // Follow
       myProfile.following.push(targetProfile._id);
       targetProfile.followers.push(myProfile._id);
     }
@@ -104,9 +109,25 @@ export const toggleFollowUser = async (req, res) => {
       isFollowing: !isFollowing,
       followersCount: targetProfile.followers.length,
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Cannot follow user" });
+  }
+};
+
+
+// Get Profile By ID
+export const getProfileByUserId = async (req, res) => {
+  try {
+    const profile = await UserProfile.findOne({ userId: req.params.userId })
+      .populate("followers", "userId name") // optional
+      .populate("following", "userId name");
+
+    if (!profile) return res.status(404).json({ message: "Profile not found" });
+
+    res.json(profile);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Cannot fetch profile" });
   }
 };

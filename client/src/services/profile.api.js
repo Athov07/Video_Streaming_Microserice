@@ -28,6 +28,11 @@ const profileService = {
     return await PROFILE_API.post(`/follow/${profileId}`);
   },
 
+  getProfileByUserId: async (userId) => {
+    const res = await PROFILE_API.get(`/user/${userId}`);
+    return res.data; // must return full UserProfile
+  },
+
 
   getWatchHistory: async () => {
     return await PROFILE_API.get("/watch-history");
