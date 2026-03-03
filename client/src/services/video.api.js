@@ -51,6 +51,10 @@ const videoService = {
   toggleDislike: async (id) => {
     return await VIDEO_API.put(`/dislike/${id}`);
   },
+
+  getMyStats: async () => {
+  return await VIDEO_API.get("/my-stats");
+}
 };
 
 export default videoService;

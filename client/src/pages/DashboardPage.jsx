@@ -9,16 +9,24 @@ import DashboardHeader from "../components/dashboard/DashboardHeader";
 function DashboardPage() {
   const [profile, setProfile] = useState(null);
   const [videos, setVideos] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDashboard = async () => {
-      const profileRes = await profileService.getMyProfile();
-      const videoRes = await videoService.getMyVideos();
+      try {
+        const profileRes = await profileService.getMyProfile();
+        const videoRes = await videoService.getMyVideos();
+        const statsRes = await videoService.getMyStats();
 
-      setProfile(profileRes.data);
-      setVideos(videoRes.data);
-      setLoading(false);
+        setProfile(profileRes.data);
+        setVideos(videoRes.data);
+        setStats(statsRes.data);
+      } catch (error) {
+        console.error("Dashboard fetch error", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchDashboard();
@@ -28,12 +36,12 @@ function DashboardPage() {
 
   return (
     <>
-      <DashboardHeader name={profile.name} />
+      <DashboardHeader name={profile?.name} />
 
       <div className="grid grid-cols-3 gap-4 mb-8">
-        <StatsCard title="Total Videos" value={profile.stats.totalVideos} />
-        <StatsCard title="Total Views" value={profile.stats.totalViews} />
-        <StatsCard title="Total Likes" value={profile.stats.totalLikes} />
+        <StatsCard title="Total Videos" value={stats?.totalVideos || 0} />
+        <StatsCard title="Total Views" value={stats?.totalViews || 0} />
+        <StatsCard title="Total Likes" value={stats?.totalLikes || 0} />
       </div>
 
       <h2 className="title-md mb-4">My Videos</h2>

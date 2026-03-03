@@ -17,9 +17,14 @@ export default function ProfilePage() {
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [stats, setStats] = useState({
+    totalVideos: 0,
+    totalViews: 0,
+    totalLikes: 0,
+  });
 
   const isOwnProfile =
-  String(user?._id) === String(profile?.userId?._id || profile?.userId);
+    String(user?._id) === String(profile?.userId?._id || profile?.userId);
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -29,6 +34,9 @@ export default function ProfilePage() {
 
         const videoRes = await videoService.getMyVideos();
         setVideos(videoRes.data);
+
+        const statsRes = await videoService.getMyStats();
+        setStats(statsRes.data);
       } catch (error) {
         console.error("Failed to load profile", error);
       } finally {
@@ -45,11 +53,9 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-10">
-      
       {/* ================= PROFILE SECTION ================= */}
       <div className="card">
         <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
-
           {/* Left Side - Profile Card */}
           <ProfileCard
             profile={profile}
@@ -59,7 +65,6 @@ export default function ProfilePage() {
 
           {/* Right Side */}
           <div className="flex-1">
-
             <h2 className="title-lg">{profile.name}</h2>
 
             {/* Email from AuthContext (AuthService owns email) */}
@@ -68,17 +73,17 @@ export default function ProfilePage() {
             {/* Stats */}
             <div className="flex gap-8 text-sm text-gray-600 mb-6">
               <div>
-                <strong>{profile.stats?.totalVideos || 0}</strong>
+                <strong>{stats.totalVideos}</strong>
                 <p>Videos</p>
               </div>
 
               <div>
-                <strong>{profile.stats?.totalViews || 0}</strong>
+                <strong>{stats.totalViews}</strong>
                 <p>Views</p>
               </div>
 
               <div>
-                <strong>{profile.stats?.totalLikes || 0}</strong>
+                <strong>{stats.totalLikes}</strong>
                 <p>Likes</p>
               </div>
             </div>

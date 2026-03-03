@@ -193,3 +193,56 @@ export const deleteVideo = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+
+
+
+
+
+
+
+
+
+
+import mongoose from "mongoose";
+
+export const getMyStats = async (req, res) => {
+  try {
+
+    const stats = await Video.aggregate([
+      {
+        $match: {
+          userId: req.user.id, // string match (correct for your schema)
+        },
+      },
+      {
+        $project: {
+          views: 1,
+          likesCount: { $size: "$likes" },
+          dislikesCount: { $size: "$dislikes" },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalVideos: { $sum: 1 },
+          totalViews: { $sum: "$views" },
+          totalLikes: { $sum: "$likesCount" },
+          totalDislikes: { $sum: "$dislikesCount" },
+        },
+      },
+    ]);
+
+    res.json(
+      stats[0] || {
+        totalVideos: 0,
+        totalViews: 0,
+        totalLikes: 0,
+        totalDislikes: 0,
+      }
+    );
+  } catch (error) {
+    console.error("Stats Error:", error);
+    res.status(500).json({ message: "Failed to fetch stats" });
+  }
+};
