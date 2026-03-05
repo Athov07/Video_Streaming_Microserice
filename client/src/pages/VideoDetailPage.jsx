@@ -14,6 +14,8 @@ export default function VideoDetailPage() {
   const [video, setVideo] = useState(null);
   const [recommended, setRecommended] = useState([]);
   const [loading, setLoading] = useState(true);
+  const user = JSON.parse(localStorage.getItem("user"));
+  const currentUserId = user?._id;
 
   const loadVideoData = async () => {
     try {
@@ -53,6 +55,7 @@ export default function VideoDetailPage() {
 
         <VideoOwnerInfo
           video={video}
+          currentUserId={currentUserId}
           onUpdate={loadVideoData}
         />
 

@@ -15,7 +15,7 @@ function DashboardSidebar() {
   };
 
   return (
-    <div className="w-64 bg-gray-100 p-4 min-h-screen">
+    <div className="w-58 bg-gray-100 p-4 min-h-screen">
       <h2 className="font-bold mb-4">Menu</h2>
       <ul>
         <li

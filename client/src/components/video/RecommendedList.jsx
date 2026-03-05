@@ -15,7 +15,7 @@ export default function RecommendedList({ videos, currentId }) {
           >
             <video
               src={video.url}
-              className="w-32 h-20 object-cover rounded"
+              className="w-38 h-20 object-cover rounded"
             />
             <div>
               <h4 className="font-semibold text-sm">
