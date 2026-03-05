@@ -93,17 +93,37 @@ export const getMyVideos = async (req, res) => {
 ========================= */
 export const likeVideo = async (req, res) => {
   try {
-    const updatedVideo = await Video.findByIdAndUpdate(
-      req.params.id,
-      {
-        $addToSet: { likes: req.user.id },
-        $pull: { dislikes: req.user.id },
-      },
-      { returnDocument: "after" }
-    );
+    const video = await Video.findById(req.params.id);
 
-    if (!updatedVideo) {
+    if (!video) {
       return res.status(404).json({ message: "Video not found" });
+    }
+
+    const userId = req.user.id;
+
+    const alreadyLiked = video.likes.includes(userId);
+
+    let updatedVideo;
+
+    if (alreadyLiked) {
+      // Remove Like (toggle off)
+      updatedVideo = await Video.findByIdAndUpdate(
+        req.params.id,
+        {
+          $pull: { likes: userId },
+        },
+        { new: true }
+      );
+    } else {
+      // Add Like and remove Dislike
+      updatedVideo = await Video.findByIdAndUpdate(
+        req.params.id,
+        {
+          $addToSet: { likes: userId },
+          $pull: { dislikes: userId },
+        },
+        { new: true }
+      );
     }
 
     res.json(updatedVideo);
@@ -113,22 +133,44 @@ export const likeVideo = async (req, res) => {
   }
 };
 
+
+
 /* =========================
    Dislike Video (Atomic Update)
 ========================= */
 export const dislikeVideo = async (req, res) => {
   try {
-    const updatedVideo = await Video.findByIdAndUpdate(
-      req.params.id,
-      {
-        $addToSet: { dislikes: req.user.id },
-        $pull: { likes: req.user.id },
-      },
-      { new: true }
-    );
+    const video = await Video.findById(req.params.id);
 
-    if (!updatedVideo) {
+    if (!video) {
       return res.status(404).json({ message: "Video not found" });
+    }
+
+    const userId = req.user.id;
+
+    const alreadyDisliked = video.dislikes.includes(userId);
+
+    let updatedVideo;
+
+    if (alreadyDisliked) {
+      // Remove Dislike (toggle off)
+      updatedVideo = await Video.findByIdAndUpdate(
+        req.params.id,
+        {
+          $pull: { dislikes: userId },
+        },
+        { new: true }
+      );
+    } else {
+      // Add Dislike and remove Like
+      updatedVideo = await Video.findByIdAndUpdate(
+        req.params.id,
+        {
+          $addToSet: { dislikes: userId },
+          $pull: { likes: userId },
+        },
+        { new: true }
+      );
     }
 
     res.json(updatedVideo);
@@ -137,6 +179,8 @@ export const dislikeVideo = async (req, res) => {
     res.status(500).json({ message: "Error disliking video" });
   }
 };
+
+
 
 /* =========================
    Edit Video
