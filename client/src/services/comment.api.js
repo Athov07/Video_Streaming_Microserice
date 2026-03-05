@@ -7,7 +7,6 @@ const getToken = () => {
 };
 
 const commentService = {
-
   /* =========================
      Get Comments of a Video
   ========================= */
@@ -29,7 +28,7 @@ const commentService = {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }
+      },
     );
 
     return res.data;
@@ -49,6 +48,48 @@ const commentService = {
 
     return res.data;
   },
+
+  /* =========================
+     Edit Comment
+  ========================= */
+editComment: async (commentId, text) => {
+  const token = getToken();
+
+  const res = await axios.put(
+    `${API_URL}/${commentId}`,
+    { text },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  return res.data;
+},
+
+
+/* =========================
+   Like Comment
+========================= */
+
+likeComment: async (commentId) => {
+
+  const token = getToken();
+
+  const res = await axios.put(
+    `${API_URL}/${commentId}/like`,
+    {},
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  return res.data;
+},
+
 };
 
 export default commentService;

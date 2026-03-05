@@ -48,3 +48,64 @@ export const deleteComment = async (req, res) => {
     res.status(500).json({ message: "Failed to delete comment" });
   }
 };
+
+
+export const editComment = async (req, res) => {
+  try {
+
+    const { text } = req.body;
+
+    const comment = await Comment.findById(req.params.id);
+
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    // Only comment owner can edit
+    if (comment.userId !== req.user.id) {
+      return res.status(403).json({ message: "Not allowed" });
+    }
+
+    comment.text = text;
+
+    await comment.save();
+
+    res.json(comment);
+
+  } catch (error) {
+    console.error("Edit Comment Error:", error);
+    res.status(500).json({ message: "Failed to edit comment" });
+  }
+};
+
+
+export const toggleLikeComment = async (req, res) => {
+  try {
+
+    const comment = await Comment.findById(req.params.id);
+
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    const userId = req.user.id;
+
+    const alreadyLiked = comment.likes.includes(userId);
+
+    if (alreadyLiked) {
+      // remove like
+      comment.likes = comment.likes.filter(id => id !== userId);
+    } else {
+      // add like
+      comment.likes.push(userId);
+    }
+
+    await comment.save();
+
+    res.json(comment);
+
+  } catch (error) {
+    console.error("Like Comment Error:", error);
+    res.status(500).json({ message: "Failed to like comment" });
+  }
+};
