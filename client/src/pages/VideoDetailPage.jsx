@@ -7,6 +7,7 @@ import VideoActions from "../components/video/VideoActions";
 import VideoOwnerInfo from "../components/video/VideoOwnerInfo";
 import RecommendedList from "../components/video/RecommendedList";
 import Loader from "../components/common/Loader";
+import CommentSection from "../components/comments/CommentSection";
 
 export default function VideoDetailPage() {
   const { id } = useParams();
@@ -62,7 +63,7 @@ export default function VideoDetailPage() {
         <p className="text-gray-700">
           {video.description}
         </p>
-
+        <CommentSection videoId={video._id} />
       </div>
 
       <RecommendedList
