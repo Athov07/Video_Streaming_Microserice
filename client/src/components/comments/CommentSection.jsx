@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { FaTrash, FaEdit } from "react-icons/fa";
 import commentService from "../../services/comment.api";
 import { FaThumbsUp } from "react-icons/fa";
+import defaultAvatar from "../../assets/default-avatar.png";
 
 export default function CommentSection({ videoId }) {
   const [comments, setComments] = useState([]);
@@ -10,6 +11,7 @@ export default function CommentSection({ videoId }) {
   const [editingCommentId, setEditingCommentId] = useState(null);
 
   const user = JSON.parse(localStorage.getItem("user"));
+
 
   /* =========================
      Load Comments
@@ -132,29 +134,39 @@ export default function CommentSection({ videoId }) {
       ========================= */}
       <div className="space-y-4">
         {comments.map((comment) => (
-          <div
-            key={comment._id}
-            className="border p-3 rounded flex justify-between items-start"
-          >
-            {/* LEFT SIDE */}
-            <div>
-              <p className="font-semibold">{comment.userName}</p>
+            // console.log(comment),
+          <div key={comment._id} className="flex gap-3 border-b pb-4">
+            {/* Profile Image */}
+            <img
+              src={
+                comment.profileImage ||
+                defaultAvatar
+              }
+              alt={comment.userName}
+              className="w-10 h-10 rounded-full object-cover"
+            />
+
+            {/* Comment Content */}
+            <div className="flex-1">
+              <p className="font-semibold text-sm">{comment.userName}</p>
 
               <p className="text-gray-700">{comment.text}</p>
 
               {/* Like Button */}
-              <button
-                onClick={() => handleLike(comment._id)}
-                className="flex items-center gap-1 text-gray-600 hover:text-blue-600 mt-2"
-              >
-                <FaThumbsUp />
-                {comment.likes?.length || 0}
-              </button>
+              <div className="flex items-center gap-4 mt-2 text-gray-500 text-sm">
+                <button
+                  onClick={() => handleLike(comment._id)}
+                  className="flex items-center gap-1 hover:text-blue-600"
+                >
+                  <FaThumbsUp />
+                  {comment.likes?.length || 0}
+                </button>
+              </div>
             </div>
 
-            {/* RIGHT SIDE (Edit/Delete) */}
+            {/* Edit/Delete for Owner */}
             {user && user._id === comment.userId && (
-              <div className="flex items-center gap-4 text-blue-600">
+              <div className="flex items-start gap-3 text-blue-600">
                 <FaEdit
                   className="cursor-pointer hover:text-gray-600"
                   onClick={() => handleEditClick(comment)}

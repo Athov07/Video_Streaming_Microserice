@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5000/api", // your backend base URL
+  baseURL: "http://localhost:5000/api/auth", // your backend base URL
 });
 
 // Attach access token automatically
@@ -17,34 +17,34 @@ API.interceptors.request.use((config) => {
 const authService = {
   // LOGIN
   login: async (email, password) => {
-    return await API.post("/auth/login", { email, password });
+    return await API.post("/login", { email, password });
   },
 
   // GOOGLE LOGIN → backend redirects directly
 
   // SEND OTP (for registration)
   sendOtp: async (email) => {
-    return await API.post("/auth/send-otp", { email });
+    return await API.post("/send-otp", { email });
   },
 
   // RESEND OTP
   resendOtp: async (email) => {
-    return await API.post("/auth/resend-otp", { email });
+    return await API.post("/resend-otp", { email });
   },
 
   // REGISTER (with OTP)
   register: async (name, email, password, otp) => {
-    return await API.post("/auth/register", { name, email, password, otp });
+    return await API.post("/register", { name, email, password, otp });
   },
 
   // FORGOT PASSWORD
   forgotPassword: async (email) => {
-    return await API.post("/auth/forgot-password", { email });
+    return await API.post("/forgot-password", { email });
   },
 
   // RESET PASSWORD
   resetPassword: async (email, otp, newPassword) => {
-    return await API.post("/auth/reset-password", { email, otp, newPassword });
+    return await API.post("/reset-password", { email, otp, newPassword });
   },
 
   // GET PROFILE
@@ -60,7 +60,7 @@ const authService = {
   // LOGOUT
   logout: async (refreshToken) => {
     // send refreshToken in request body
-    return await API.post("/auth/logout", { token: refreshToken });
+    return await API.post("/logout", { token: refreshToken });
   },
 
   // GOOGLE LOGIN → backend redirect
