@@ -17,7 +17,7 @@ const commentSchema = new mongoose.Schema(
       required: true,
     },
 
-    userAvatar: {
+    profileImage: {
       type: String,
       default: "",
     },
@@ -33,7 +33,7 @@ const commentSchema = new mongoose.Schema(
       },
     ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model("Comment", commentSchema);
